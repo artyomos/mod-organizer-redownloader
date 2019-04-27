@@ -1,70 +1,60 @@
 import os
 import shutil
 from library import backend
+import webbrowser
 
 # Main function - only called if opened
 if __name__ == '__main__':
+    print('Wecome to Nate\'s Mod Organizer Mod Redownloader!\n')
     while True:
-        path = input('What is the path for the directory: ').strip()
+        path = input('What is the path for the Mod Organizer MODS directory: ').strip()
         if os.path.isdir(path):
             break
         else:
             print('The path you gave was invalid! Make sure you are typing it properly...\n')
 
-    # TO UPDATE
-    print('\nSorting Files in {}... \n\nYou may be asked to select a category for unknown file extensions'.format(path))
-    print('Please note EVERY FILE will be moved to a folder, so BE CAREFUL HOW YOU USE THIS')
-    input('\nPress ENTER to continue... or close this window to cancel ')
+    mods = backend.get_mods(path)
+    current = 0
+    total = len(mods)
 
-    # TO UPDATE
-    categories = backend.get_categories()
+    print('\nFor each mod you have, you will be given the option to open the browser to the URL, or if the mod does not have a proper url, open the broswer to a Google Search for your mod. Some mods (Like a Bashed Patch) can be skipped by selecting the skip option out of the options provided for each mod.')
+    print('\nFor your convienience, I have Included WARNING messages with a description of WHY. It is very likely that you will see a ton of warning messages indicating your mods do not have URLs, do not worry, we can search for them on Google :)')
+    print('\nWARNING: It appears Mod Organizer is kinda dumb, so if you select go to download page and its for a COMPLETELY DIFFERENT MOD, it is NOT my fault! (I have encountered this myself several times, so included an optional checkup by the program, there is the option to search google in the case this happens, and I\'m sure google will help you out better)')
+    print('(Pro Tip): Since we are talking about a lot of files and web pages, please note Ctrl+W closes a tab, and Alt+Tab switches back to this program :)')
+    if len(mods) > 100:
+        print('\nIt looks like we have a grand total of {} mods to redownload today! Wowza!'.format(len(mods)))
+    input('Please Press enter to continue, if you are ready...')
 
-    # TO UPDATE
-    for file in os.listdir(path):
-        if os.path.isfile(path+'\\'+file):
-            if '.' in file:
-                extension = file.split('.')[-1].lower()
-                try:
-                    destination_folder = categories[extension]
-                except KeyError:
-                    while True:
-                        print('\nUh oh! Found an extension (.{}) that isn\'t in any category! \nWhat would you like to do with it?'.format(extension))
-                        result = input('Please type only what is shown:\n1. Ignore and leave it\n2. Define a category for it\nChoice: ')
-                        print('')
-                        if result == '1':
-                            backend.add_extension(categories, 'IGNORE', extension)
-                            destination_folder = 'IGNORE'
-                            break
-                        elif result == '2':
-                            while True:
-                                category = input('\nPlease define the category for this file as such: "example"\nFile Category: ').lower()
-                                verify = input('Please verify that you wish for the file extension .{}\'s category to be defined as {}\n(Y/N): '.format(extension, category))
-                                if verify == 'y':
-                                    backend.add_extension(categories, category, extension)
-                                    destination_folder = categories[extension]
-                                elif verify == 'n':
-                                    print('Ok, going back to previous question')
-                                else:
-                                    print('Type what is shown please')
-                                print('')
-                                break
-                            break
-                        else:
-                            print('Very funny. Try again.')
-            else: # Problem 1: File has no extension
-                destination_folder = 'NO EXTENSION'
+    for mod in mods:
+        current += 1
+        print(f'\n**Working on mod "{mod}" ({current}/{total})**\n')
+        url = mods[mod]['url']
+        if url:
+            # Remove extraneous info
+            url = backend.strip_url(url)
+            if input('What would you like to do?\n1 - Go to Nexus Page\tENTER - Skip Mod\n: ') == '1':
+                print('Heading to Nexus. Make sure to choose the downloads you need!\n')
+                webbrowser.open(url+'?tab=files')
+            else: continue
 
-            # Uncomment to debug current working file
-            # print(file, destination_folder)
+            # A recheck to make sure it was good
+            if input(f'Was your search for "{mod}" successful?\n1 - No, Google Search the Mod\tENTER - Just fine!\n: ') == '1':
+                print('Heading to Google, make sure to get the right one for your game (SSE or Regular)!')
+                query = mod.replace(' ','+')
+                google = f'https://www.google.com/search?q={query}'
+                webbrowser.open(google)
+            else: continue
+        else:
+            if input('Uh Oh! Looks like this mod didn\'t have a valid file url! Your options are:\n1 - Do a Google Search for this mod\tENTER - Skip Mod\n: ') == '1':
+                print('Heading to Google, make sure to get the right one for your game (SSE or Regular)!')
+                query = mod.replace(' ','+')
+                google = f'https://www.google.com/search?q={query}'
+                webbrowser.open(google)
+            else: continue
 
-            # TO UPDATE (/Remove?)
-            if destination_folder == 'IGNORE': pass
-            else:
-                print('Moved {} to folder {}'.format(file, destination_folder))
-                os.makedirs(path+ '\\'+destination_folder, exist_ok=True)
-                shutil.move(path+ '\\'+file, path+ '\\'+destination_folder+'\\')
 
-    # TO UPDATE
-    print('\nAll file sorting finished. Writing categories..')
-    backend.write_categories(categories)
+
+
+
+    print('\nAll mods have been iterated!')
     input('Done. Press ENTER to close...')
