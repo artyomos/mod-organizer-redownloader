@@ -51,10 +51,18 @@ def check_url(url):
     else:
         return False
 
+# Leaves url ending with /
+def strip_url(url):
+    if url.endswith('/'):
+        return url
+    else:
+        end = url.rfind('/')
+        return url[:end+1]
+
 def test_functions():
     print('Testing get_mods:')
     mods = get_mods(dir)
     print(str(mods)+'\n')
 
 
-test_functions()
+# test_functions()
