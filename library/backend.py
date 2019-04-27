@@ -1,54 +1,60 @@
 import os
+import configparser
 
-# DEBUG for now:
-# __file__ = os.getcwd()+'\\mod-organizer-redownloader'
+# TEMP TESTING ONLY
+dir = r"F:\My Games\Bethesda Modding\SkyrimSE\mods"
 
+def get_mods(dir):
+    mods = {}
 
-DIRECTORY = os.path.dirname(__file__) + '\\categories' # Directory is GIVEN BY USER
+    with os.scandir(dir) as mod_dir:
+        # Checks for all mod folders
+        mod_folders = [directory for directory in mod_dir if (directory.is_dir())]
+        config = configparser.ConfigParser()
 
-def get_categories():
-    categories = {}
+        # Checks for meta.ini in each folder
+        for mod in mod_folders:
+            path = mod.path
+            # If the mod folder is actually a Mod Organizer separator, ignore it
+            if mod.name.endswith('separator'):
+                continue
 
-    # Make the category directory if it doesn't exist
-    os.makedirs(DIRECTORY, exist_ok=True)
-    for file in os.listdir(DIRECTORY):
-        if file.endswith('.cat'):
-            with open(DIRECTORY+ '\\' + file, 'r') as owo:
-                if owo.readline() == FIRST_LINE:
-                    for line in owo:
-                        # line[:-1] to remove newline char
-                        line = line[:-1]
-                        if not line.startswith('//'):
-                            try:
-                                # Get category and items
-                                category, items = line.split(' = ')
-                                # Create items list, and make sure to strip any extraneous spaces
-                                if isinstance(items, str):
-                                    items = [items.strip()]
-                                else:
-                                    items = [item.strip() for item in items]
-                                if category in categories:
-                                    print('WARNING: Overwriting category already set.')
-                                categories[category] = items
-                                # print(category, items)
-                            except ValueError:
-                                # Invalid line, ignore for now
-                                print('WARNING: Invalid line in file {}, if you haven\'t edited the file, report this error to the developer (Along with the file!)'.format(file))
-                            except Exception as e:
-                                print('Error: {}'.format(e))
-                            # print(line)
-                else: print('Invalid File in directory: {} [IGNORING]'.format(file))
+            # Default Values
+            url = ''
+            id = 0
 
-    # This one-liner inverts the dictionary, offering the ability to search for category based on file extension
-    # This line is very case-specific so don't copy-paste to other projects!!
-    categories = {value: key for key in categories for value in categories[key]}
-    return categories
+            # Open config with configparser
+            try:
+                config.read(f'{path}\\meta.ini')
+                url = config['General']['url']
+            except Exception as e: #Generic I know
+                if e == 'url':
+                    print(f'Warning: Mod "{mod.name}" has no url')
+                else:
+                    print('Warning: Encountered Exception: {} for {}'.format(e, mod.name))
 
+            # Checks for valid Nexus url (cdn urls break)
+            if not check_url(url):
+                print(f'WARNING: Mod "{mod.name}" does not have a valid Nexus URL')
+                url = '' #Overwrite the bad URL so we can search Nexus for it later
+
+            mods[mod.name] = {
+                'url':url,
+                'path':mod.path,
+             }
+            # DEBUG: print(url)
+    return mods
+
+def check_url(url):
+    if url.find('nexusmods.com') != -1:
+        return True
+    else:
+        return False
 
 def test_functions():
-    print('Testing get_categories:')
-    categories = get_categories()
-    print(str(categories)+'\n')
+    print('Testing get_mods:')
+    mods = get_mods(dir)
+    print(str(mods)+'\n')
 
 
-#test_functions()
+test_functions()
